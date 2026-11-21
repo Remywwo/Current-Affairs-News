@@ -33,6 +33,23 @@ UA = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
 
 CN_TZ = timezone(timedelta(hours=8))
 
+# ---------------------------------------------------------------- 已人工确认的链接
+#
+# 这些链接的服务器使用了通用证书（证书 CN 与域名不符），严格校验证书链的
+# 客户端会报 TLS 错误，但浏览器可正常打开、内容完整有效 —— 已逐一实测确认。
+#
+# 收录在这里是为了让它们不再反复触发 linkWarnings 告警。
+# 收录条件（必须都满足）：
+#   1. 放宽校验后返回 200，且页面确实是目标内容（标题、正文可读）
+#   2. 人工确认内容无误（法条条文与本站条目一致）
+#
+VERIFIED_TLS_URLS = {
+    # 《中华人民共和国民法典》全文 — 人民网法治频道
+    # 证书 CN 为 default.chinanetcenter.com，与域名不符；页面为 GB18030 编码，
+    # 浏览器可正常打开，已确认正文为民法典全文。
+    'https://legal.people.com.cn/n1/2020/0602/c42510-31731656.html',
+}
+
 # ---------------------------------------------------------------- 源配置
 
 SPEECH_SOURCES = [
@@ -492,6 +509,11 @@ def check_law_versions(dry=False):
         if state == 'bad':
             bad.append((it['id'], code, it['sourceUrl']))
         elif state == 'warn':
+            # 已人工确认过的链接不再重复告警：
+            # 这些链接虽然证书链有瑕疵，但浏览器可正常打开、内容完整有效，
+            # 属于站点自身的 TLS 兼容性问题而非链接失效。
+            if it['sourceUrl'] in VERIFIED_TLS_URLS:
+                continue
             warned.append((it['id'], code, it['sourceUrl']))
         print(f'\r    校验中 {i}/{len(data["items"])}  失效 {len(bad)}  警告 {len(warned)}', end='')
     print()

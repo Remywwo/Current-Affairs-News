@@ -16,15 +16,7 @@
       "total": 66,
       "invalidLinks": 0,
       "warnLinks": 1
-    },
-    "linkWarnings": [
-      {
-        "id": "lv-civil-law-01",
-        "code": "TLS证书链不匹配",
-        "sourceUrl": "https://legal.people.com.cn/n1/2020/0602/c42510-31731656.html",
-        "note": "链接可用但证书链不匹配（浏览器可正常打开），建议人工确认后保留"
-      }
-    ]
+    }
   },
   "items": [
     {
