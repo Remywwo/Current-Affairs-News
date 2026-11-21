@@ -382,8 +382,16 @@ def merge_speech(existing, incoming, with_points=True):
 
 
 def merge_news(existing, incoming, with_points=True):
+    """保留已有条目的摘要等人工内容；仅追加真正的新链接
+
+    质量闸门：抽不到摘要的条目一律不入库。
+    「新华社快讯」这类页面正文由 JS 注入，服务端 HTML 里没有正文段落，
+    抽出来的卡片会只有标题没有内容。与其收一堆空壳，不如不收——
+    与「链接不通即丢弃」是同一条原则：宁可不收录，也不可编造。
+    """
     by_url = {i['sourceUrl']: i for i in existing['items']}
     added = 0
+    dropped_empty = []
     for c in incoming:
         if c['sourceUrl'] in by_url:
             continue
@@ -394,11 +402,15 @@ def merge_news(existing, incoming, with_points=True):
                 # 新闻摘要取前两句，拼成一段概述（仍是原文句子的截取）
                 c['summary'] = ' '.join(pts[:2])[:300]
                 c['autoSummary'] = True
+        if with_points and not c.get('summary'):
+            # 抽不到正文 —— 丢弃，不收空壳
+            dropped_empty.append(c)
+            continue
         existing['items'].append(c)
         by_url[c['sourceUrl']] = c
         added += 1
     existing['items'].sort(key=lambda x: x.get('date', ''), reverse=True)
-    return added
+    return added, dropped_empty
 
 
 # ---------------------------------------------------------------- 主流程
@@ -437,7 +449,11 @@ def update_news(dry=False):
     ok, dropped, warned = verify(cands)
     have = {i['sourceUrl'] for i in existing['items']}
     pending = [c for c in ok if c['sourceUrl'] not in have]
-    added = 0 if dry else merge_news(existing, ok)
+    empty_dropped = []
+    if dry:
+        added = 0
+    else:
+        added, empty_dropped = merge_news(existing, ok)
     if not dry:
         existing['meta']['updatedAt'] = now_cn()
         existing['meta']['lastRun'] = {
@@ -450,6 +466,10 @@ def update_news(dry=False):
     if dry and pending:
         print('  待新增条目预览（前 8 条）：')
         for c in pending[:8]:
+            print(f'    · [{c["date"]}] {c["title"][:40]}')
+    if empty_dropped:
+        print(f'  另有 {len(empty_dropped)} 条抽不到正文（快讯类），已丢弃：')
+        for c in empty_dropped[:5]:
             print(f'    · [{c["date"]}] {c["title"][:40]}')
     return dropped, warned
 
