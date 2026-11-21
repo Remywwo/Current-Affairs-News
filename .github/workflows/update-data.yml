@@ -1,0 +1,100 @@
+name: 更新数据
+
+on:
+  schedule:
+    # 每天 08:00 UTC（北京时间 16:00）抓取一次
+    # 避开整点，减少与其他任务撞在同一分钟导致 GitHub 排队延迟
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    # 手动触发，支持传参
+    inputs:
+      dry_run:
+        description: '试运行（只抓取校验，不写入数据）'
+        type: boolean
+        default: false
+      force_commit:
+        description: '即使数据无实质变化也提交（用于刷新页面时间戳）'
+        type: boolean
+        default: false
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: 抓取并更新数据
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 设置 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 运行更新流水线
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || false }}
+        run: |
+          set -euo pipefail
+          if [ "${DRY_RUN:-false}" = "true" ]; then
+            echo "▶ 试运行模式：不写入数据"
+            python3 scripts/update.py --dry-run
+          else
+            echo "▶ 正式更新模式"
+            python3 scripts/update.py
+          fi
+
+      - name: 运行前端回归测试
+        # 更新完数据必须验证前端还能正常渲染，防止坏数据导致站点白屏
+        run: |
+          set -euo pipefail
+          node scripts/render-test.mjs
+          node scripts/masonry-test.mjs
+          node scripts/truncate-test.mjs
+
+      - name: 检测数据实质变化
+        id: changes
+        run: |
+          set -euo pipefail
+          # 脚本有实质变化返回 0，无变化返回 1
+          if python3 scripts/check-changes.py --verbose; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 提交并推送
+        if: steps.changes.outputs.changed == 'true' || github.event.inputs.force_commit == 'true'
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          # --allow-empty：force_commit 时即使内容没变也要留痕，
+          # 否则 git commit 因无变更退出码 1，会把整个 job 标红
+          git commit --allow-empty -m "chore(data): 自动更新 $(TZ=Asia/Shanghai date +%Y-%m-%d)"
+          git push
+
+      - name: 上传运行日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-snapshot
+          path: data/*.json
+          retention-days: 7
+          if-no-files-found: ignore

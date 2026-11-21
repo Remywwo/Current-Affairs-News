@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# 本地工具目录（WorkBuddy 工作区数据，不应进入仓库）
+.workbuddy/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
