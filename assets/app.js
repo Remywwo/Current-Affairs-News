@@ -370,16 +370,6 @@
 
   // ---------- 数据来源区块（内嵌于总览页） ----------
   function viewSourcesSection() {
-    var s = DATA.speeches.items.length;
-    var n = DATA.news.items.length;
-    var l = DATA.law ? DATA.law.items.length : 0;
-    var allItems = DATA.speeches.items.concat(DATA.news.items).concat(DATA.law ? DATA.law.items : []);
-    var urlSet = {};
-    allItems.forEach(function (i) { if (i.sourceUrl) urlSet[i.sourceUrl] = 1; });
-    var totalUrls = Object.keys(urlSet).length;
-    // 2026-11-21 核验：206 个去重链接中 203 个直连 200，2 个为正常 302 跳转，1 个证书链瑕疵
-    var okUrls = totalUrls - 3;
-
     var h = '<div class="section-head"><h2>数据来源与核验说明</h2>' +
             '<span class="hint">全部条目均可回溯至官方原文</span></div>';
 
@@ -422,14 +412,6 @@
     }
     h += '</tbody></table></div>';
 
-    if (DATA.law && DATA.law.meta && DATA.law.meta.pending && DATA.law.meta.pending.length) {
-      h += '<div class="section-head"><h2>待补充清单（诚实标注）</h2></div>';
-      h += '<div class="notice"><b>以下考点曾计划收录，但因无法在官方源核实到确切条文序号而<strong>未予收录</strong>。</b>' +
-           '列出它们是为了让你知道哪些内容是查证过的空白，而不是遗漏。</div>';
-      h += '<ul class="bullets" style="margin-top:10px">' +
-           DATA.law.meta.pending.map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>';
-    }
-
     if (DATA.law.meta && DATA.law.meta.needsReview && DATA.law.meta.needsReview.length) {
       h += '<div class="notice"><b>⚠ 有 ' + DATA.law.meta.needsReview.length + ' 条法条链接已失效，需人工复核：</b><br>' +
            DATA.law.meta.needsReview.map(function (r) {
@@ -443,18 +425,6 @@
              return esc(r.id) + '（' + esc(r.code) + '）' + esc(r.sourceUrl);
            }).join('<br>') + '</div>';
     }
-
-    h += '<div class="section-head"><h2>链接可访问性核验</h2>' +
-         '<span class="hint">' + (s + n + l) + ' 条内容 · ' + totalUrls + ' 个去重来源链接</span></div>';
-    h += '<div class="notice"><b>核验方法与结果（' + esc(DATA.speeches.meta.updatedAt) + '）：</b><br>' +
-         '本站对全部 ' + totalUrls + ' 个去重来源链接逐条发起 HTTP 请求，检查返回状态码。<br>' +
-         '· <strong>' + okUrls + ' 个</strong>直接返回 200，可立即打开；<br>' +
-         '· <strong>2 个</strong>为 302 正常跳转（政务微信公众号、中新网引述），浏览器点击可正常到达目标页，' +
-         '卡片内已单独标注其来源性质，非本站失效链接；<br>' +
-         '· 构建过程中发现并修复了 <strong>10 个失效链接</strong>（原为推测构造或旧版页面地址），' +
-         '全部替换为实际抓取到的官方可访问地址；<br>' +
-         '· 发现 <strong>1 处日期错误</strong>：「三农」重要指示原记为 2026-02-12，' +
-         '经核对官方原文实为 <strong>2025-12-30</strong>（中央农村工作会议 12 月 29—30 日召开），已更正。</div>';
 
     h += '<div class="section-head"><h2>更新与自查方法</h2></div>';
     h += '<div class="grid cols-2 grid-even">';
