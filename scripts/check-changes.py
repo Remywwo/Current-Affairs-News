@@ -27,7 +27,14 @@ import os
 import sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+# 数据目录：兼容 src/data/ 与 public/data/ 两种布局
+# （前端用 Vite 构建，JSON 由 src/data/ 直接静态引入打包）
+_DATA_CANDIDATES = [
+    os.path.join(BASE_DIR, 'src', 'data'),
+    os.path.join(BASE_DIR, 'public', 'data'),
+    os.path.join(BASE_DIR, 'data'),
+]
+DATA_DIR = next((d for d in _DATA_CANDIDATES if os.path.isdir(d)), _DATA_CANDIDATES[0])
 
 FILES = ['speeches.json', 'news.json', 'law-knowledge.json']
 
@@ -60,7 +67,10 @@ def main():
             cur = json.load(f)
 
         # 与 HEAD 版本比较（CI 中 git 已 checkout 出 HEAD）
-        rel = os.path.join('data', name)
+        # 相对路径从 DATA_DIR 推导，不要硬编码 'data/' ——
+        # 数据目录改过位置（data/ → src/data/），写死会导致永远读不到历史版本，
+        # 每次都误判为「新增」，进而每次都提交。
+        rel = os.path.relpath(path, BASE_DIR)
         try:
             head_raw = os.popen(f'git show HEAD:{rel} 2>/dev/null').read()
             head = json.loads(head_raw) if head_raw.strip() else None

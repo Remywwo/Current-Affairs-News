@@ -1,0 +1,28 @@
+{
+  "name": "current-affairs-news",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "时政与执法常识学习站 — 静态站点，数据来自官方渠道，每日增量更新",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:only": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/verify-build.mjs"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "playwright-core": "^1.65.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

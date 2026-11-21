@@ -16,6 +16,11 @@ venv/
 # Node
 node_modules/
 
+# 构建产物 —— 部署走 GitHub Actions（vite build → deploy-pages），
+# 产物不入库，仓库里只保留源码
+dist/
+.vite/
+
 # 编辑器
 .vscode/
 .idea/

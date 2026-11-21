@@ -1,5 +1,5 @@
 /**
- * 瀑布流几何回归测试
+ * 瀑布流几何回归测试（React 版）
  *
  * 背景：曾出现过「卡片之间有大量空白」的线上 bug —— 根因是 span 计算公式
  * 除错了分母（除以 rowHeight 而非 rowHeight+rowGap），导致 span 被放大约 3 倍。
@@ -9,9 +9,10 @@
  *   卡片 align-self:start 贴在行顶
  *   → 视觉间距 = 下一张卡的 y - (本张卡的 y + 本张卡实际内容高)
  *
- * 同时校验 app.js 中实际使用的公式常量与 CSS 是否一致。
+ * 同时校验 useMasonry.ts 中实际使用的公式常量与 CSS 是否一致 ——
+ * 这正是当年那个 bug 的根因所在，跨文件漂移就会复发。
  *
- * 运行：node scripts/masonry-test.mjs
+ * 运行：npx tsx scripts/masonry-test.mjs
  */
 
 import fs from 'fs';
@@ -22,11 +23,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 
 // ---------- 从源码读取实际配置，避免测试与实现脱节 ----------
-const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
-const css = fs.readFileSync(path.join(ROOT, 'assets/style.css'), 'utf8');
+const masonryTs = fs.readFileSync(path.join(ROOT, 'src/hooks/useMasonry.ts'), 'utf8');
+const css = fs.readFileSync(path.join(ROOT, 'src/styles/global.css'), 'utf8');
 
 function readConst(name, fallback) {
-  const m = appJs.match(new RegExp(name + '\\s*:\\s*(\\d+)'));
+  const m = masonryTs.match(new RegExp(name + '\\s*:\\s*(\\d+)'));
   return m ? parseInt(m[1], 10) : fallback;
 }
 function readCssNum(sel, prop) {
@@ -74,7 +75,7 @@ function occupiedOf(span, rowHeight, rowGap) {
   return span * rowHeight + (span - 1) * rowGap;
 }
 
-// 复刻 app.js 中的公式
+// 复刻 useMasonry.ts 中的公式
 function spanOf(h, rowHeight, gap) {
   return Math.max(1, Math.ceil(h + gap));
 }

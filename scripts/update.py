@@ -26,7 +26,14 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, 'data')
+# 数据目录：兼容 src/data/ 与 public/data/ 两种布局
+# （前端用 Vite 构建，JSON 由 src/data/ 直接静态引入打包）
+_DATA_CANDIDATES = [
+    os.path.join(BASE_DIR, 'src', 'data'),
+    os.path.join(BASE_DIR, 'public', 'data'),
+    os.path.join(BASE_DIR, 'data'),
+]
+DATA_DIR = next((d for d in _DATA_CANDIDATES if os.path.isdir(d)), _DATA_CANDIDATES[0])
 
 UA = ('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 '
       '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')

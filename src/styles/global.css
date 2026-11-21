@@ -358,6 +358,16 @@ td code { font-size: 12px; background: var(--bg-soft); padding: 1px 6px; border-
 .footer-grid h4 { margin: 0 0 8px; font-size: 13px; color: var(--text); font-weight: 600; }
 .footer-grid p { margin: 0; line-height: 1.8; }
 .footer-grid a { color: var(--blue); }
+.footer-sources { margin-bottom: 18px; }
+.footer-sources h4 { margin: 0 0 8px; font-size: 13px; color: var(--text); font-weight: 600; }
+.footer-sources ul { margin: 0; padding-left: 18px; line-height: 1.9; }
+.footer-sources li { margin-bottom: 3px; }
+.footer-note {
+  margin: 12px 0 0; padding: 10px 13px;
+  background: var(--surface-2); border-radius: var(--radius-sm);
+  color: var(--text-mute); font-size: 12px; line-height: 1.75;
+}
+.footer-note strong { color: var(--text-soft); }
 .footer-bottom { padding-top: 18px; border-top: 1px solid var(--border); color: var(--text-mute); font-size: 12px; }
 
 /* ---------- Back to top ---------- */

@@ -59,13 +59,17 @@ jobs:
             python3 scripts/update.py
           fi
 
+      - name: 安装依赖
+        run: npm ci
+
       - name: 运行前端回归测试
         # 更新完数据必须验证前端还能正常渲染，防止坏数据导致站点白屏
+        # 用 npx tsx 而非 node —— 测试要直接 import src/ 下的 .tsx 组件
         run: |
           set -euo pipefail
-          node scripts/render-test.mjs
+          npx tsx scripts/render-test.mjs
           node scripts/masonry-test.mjs
-          node scripts/truncate-test.mjs
+          npx tsx scripts/truncate-test.mjs
 
       - name: 检测数据实质变化
         id: changes
@@ -84,7 +88,7 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add src/data/
           # --allow-empty：force_commit 时即使内容没变也要留痕，
           # 否则 git commit 因无变更退出码 1，会把整个 job 标红
           git commit --allow-empty -m "chore(data): 自动更新 $(TZ=Asia/Shanghai date +%Y-%m-%d)"
@@ -95,6 +99,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: data-snapshot
-          path: data/*.json
+          path: src/data/*.json
           retention-days: 7
           if-no-files-found: ignore

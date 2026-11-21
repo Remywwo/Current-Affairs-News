@@ -22,20 +22,47 @@
 - **正文限长 300 字** — 每张卡片的正文（要点 / 摘要 / 金句引用 / 要点标签）合计最多 300 字，超出部分在**展示层**截断并加省略号，同时给一条「查看原文全文 ↗」的链接。JSON 原始数据保持完整，点原文链接能看到全文。
   - 省略号本身计入预算，保证实际显示字数**严格 ≤ 300**。
   - 预算分配有优先级：讲话卡 = 金句（最多占 40%）> 要点；常识卡 = 要点标签 > 正文散文；新闻卡 = 摘要。
-  - 截断只在展示层发生，不改动 `data/*.json`。
+  - 截断只在展示层发生，不改动 `src/data/*.json`。
 - **数据来源信息** — 内嵌在总览页底部（来源一览、栏目明细、数据快照、自查方法），不单独设页。
   - `meta.pending`（曾计划收录但无法核实的考点）保留在 JSON 里，但不在前端展示。
 - 响应式、深浅色主题、关键词搜索、分类与年份筛选。
 
 ## 运行
 
-需要通过 HTTP 服务访问（`file://` 协议下浏览器会拦截 `fetch`）：
+技术栈：**React 18 + TypeScript + Vite**。
 
 ```bash
-cd /Users/tempest/WorkBuddy/2026-11-21-12-10-49
-python3 -m http.server 8848
-# 浏览器打开 http://127.0.0.1:8848/
+npm install
+npm run dev       # 开发服务器 http://127.0.0.1:5173/
+npm run build     # 类型检查 + 构建到 dist/
+npm run preview   # 预览构建产物 http://127.0.0.1:4173/
 ```
+
+> 数据在**构建时**静态引入（`src/data/*.json` → 打包进 JS），没有运行时 fetch，
+> 因此没有加载失败态、首屏无闪烁。
+
+## 部署
+
+站点托管在 GitHub Pages（`remywwo.com/Current-Affairs-News/`），部署走
+**GitHub Actions**，产物不入库：
+
+```
+push main → deploy-pages.yml → vite build → dist/ → actions/deploy-pages
+```
+
+| 环节 | 配置 |
+|---|---|
+| 构建产物目录 | `dist/`（`vite.config.ts` 的 `build.outDir`） |
+| Pages 部署源 | **GitHub Actions**（仓库 Settings → Pages → Source） |
+| 资源引用 | `base: './'` 相对路径，适配任意子路径 |
+| 触发条件 | `push` 到 `main` 且命中路径过滤（`src/**`、`public/**`、配置文件） |
+
+> **为什么不用 `docs/` 目录方案**：产物提交进仓库会让每次数据更新都产生
+> 巨大 diff，仓库体积也随构建产物膨胀。走 Actions 后仓库只存源码。
+
+> **为什么不用 `workflow_run` 触发部署**：数据更新流水线提交的是
+> `src/data/*.json`，命中 `push` 的 `src/**` 路径过滤，已经会触发部署。
+> 再加 `workflow_run` 会导致同一次数据更新部署两遍。
 
 ## 自动更新流水线
 
@@ -85,38 +112,66 @@ python3 scripts/update.py --dry-run  # 试运行，不改数据
 ## 目录结构
 
 ```
-index.html              单页应用入口，4 个路由视图
-assets/
-  style.css             样式（浅色默认 + [data-theme="dark"] 深色、瀑布流）
-  app.js                渲染逻辑、瀑布流排布、搜索、筛选、主题切换
-data/
-  speeches.json         讲话与重要指示
-  news.json             时政新闻
-  law-knowledge.json    执法常识考点
+index.html              Vite 入口 HTML（挂载点 #app）
+vite.config.ts          构建配置（base: './'、outDir: dist）
+src/
+  main.tsx              React 挂载入口，静态引入数据
+  App.tsx               路由分发、页头页脚
+  data/
+    speeches.json       讲话与重要指示
+    news.json           时政新闻
+    law-knowledge.json  执法常识考点
+  components/
+    Cards.tsx           三种卡片组件
+    UI.tsx              搜索框、筛选 chips、网格容器
+  hooks/
+    useHashRoute.ts     hash 路由
+    useMasonry.ts       瀑布流排布（span 计算）
+    useSearch.ts        搜索状态 + IME 组合输入处理
+    useTheme.ts         深浅色主题
+  lib/
+    types.ts            数据类型
+    utils.ts            截断、匹配、分类样式
+  styles/global.css     样式（浅色默认 + [data-theme="dark"] 深色、瀑布流）
+public/
+  favicon.svg           站点图标
 scripts/
   update.py             自动更新流水线
-  render-test.mjs       渲染冒烟测试（DOM 桩 + 真实数据）
+  check-changes.py      检测数据是否有实质变化
+  render-test.mjs       渲染冒烟测试（SSR 渲染各视图）
   masonry-test.mjs      瀑布流几何回归测试
   truncate-test.mjs     卡片正文截断回归测试
+  browser-test.mjs      真实浏览器端到端测试
+  push-via-api.py       绕过 OAuth 限制的推送脚本
+.github/workflows/
+  update-data.yml       每日数据更新流水线
+  deploy-pages.yml      构建并部署到 GitHub Pages
 ```
 
 ## 测试
 
 ```bash
-node scripts/render-test.mjs        # 渲染冒烟测试
-node scripts/masonry-test.mjs       # 瀑布流几何回归测试
-node scripts/truncate-test.mjs      # 卡片正文截断回归测试
+npx tsx scripts/render-test.mjs       # 渲染冒烟测试
+node scripts/masonry-test.mjs         # 瀑布流几何回归测试
+npx tsx scripts/truncate-test.mjs      # 卡片正文截断回归测试
+node scripts/browser-test.mjs http://127.0.0.1:4173/   # 浏览器端到端
 ```
 
-> 三个测试都**不需要启动 HTTP 服务** —— 数据直接读本地 `data/*.json`。
-> （想用浏览器看效果再单独起 `python3 -m http.server 8848`）
+> 前三个测试都**不需要启动 HTTP 服务** —— 数据直接读本地 `src/data/*.json`。
+> `render-test` / `truncate-test` 用 `tsx` 运行，因为它们要直接 import
+> `src/` 下的 `.tsx` 组件。
+>
+> `browser-test.mjs` 需要先 `npm run build && npm run preview`，它用真实
+> Chromium 加载页面，校验渲染、限长、瀑布流几何、中文输入、主题切换。
 
-> **为什么需要这三个测试**：
-> - `render-test.mjs`：`node --check` 只能查语法，查不出 `s is not defined` 这类**运行期错误**。本测试用最小 DOM 桩真实执行 `app.js` 的各视图渲染函数。
-> - `masonry-test.mjs`：曾出现过「卡片之间有大量空白」的 bug —— 根因是 span 计算公式**除错了分母**（除以 `rowHeight` 而非 `rowHeight + rowGap`），导致 span 被放大约 3 倍、视觉间距达 298～816px。本测试严格按 CSS Grid 规范（`span N 占位 = N*行高 + (N-1)*rowGap`）复算，并校验 CSS 与 JS 的配置常量是否同步。
+> **为什么需要这几个测试**：
+> - `render-test.mjs`：`tsc --noEmit` 只能查类型，查不出「读取了 undefined
+>   属性」这类**运行期错误**。本测试用 `react-dom/server` 真实渲染各视图组件。
+> - `masonry-test.mjs`：曾出现过「卡片之间有大量空白」的 bug —— 根因是 span 计算公式**除错了分母**（除以 `rowHeight` 而非 `rowHeight + rowGap`），导致 span 被放大约 3 倍、视觉间距达 298～816px。本测试严格按 CSS Grid 规范（`span N 占位 = N*行高 + (N-1)*rowGap`）复算，并校验 CSS 与 `useMasonry.ts` 的配置常量是否同步。
 > - `truncate-test.mjs`：卡片正文限 300 字，曾出现省略号**没算进预算**导致实际显示 301 字。本测试独立复算每张卡片的正文字数，并验证展示文本始终是源文本的前缀（不篡改、不编造）。
+> - `browser-test.mjs`：覆盖真实浏览器里才暴露的问题 —— 页面是否白屏、中文输入是否被 IME 打断、瀑布流实际间距是否正确、控制台是否有报错。
 
-改完前端代码务必把三个都跑一遍。
+改完前端代码务必把前三个都跑一遍；改动涉及渲染或交互时，第四个也要跑。
 
 ## 数据规范
 

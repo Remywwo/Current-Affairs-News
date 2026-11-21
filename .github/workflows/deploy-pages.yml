@@ -1,0 +1,76 @@
+name: 部署到 GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # 只关心前端产物与数据的变化。
+      # scripts/ 的改动若不影响产物（如仅更新抓取逻辑），由「更新数据」流水线负责。
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+    # 手动触发，用于强制重新部署（不改任何代码）
+
+# 注意：这里不监听 workflow_run。
+# 「更新数据」流水线提交的是 src/data/*.json，命中 push 的 'src/**' 路径过滤，
+# 已经会触发本 workflow。再加 workflow_run 会导致同一次数据更新部署两遍。
+
+# 同一分支的部署串行执行，避免两个部署同时推送互相覆盖
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: 构建
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 构建
+        run: npm run build
+
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: 部署
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: 部署到 Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
