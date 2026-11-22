@@ -10,12 +10,17 @@
 
 本脚本只比较真正影响读者看到的内容的部分：
   - items 数组（标题、要点、链接、正文……）
+  - meta.coverage（页面上展示的「覆盖时段」）
   - meta.needsReview（法条失效待复核清单）
   - meta.linkWarnings（链接告警清单）
 
 忽略的字段（仅记录运行状态，不影响内容）：
   - meta.updatedAt
   - meta.lastRun
+
+关于 meta.coverage：
+  它由条目日期实算而来，页面上用户直接可见，必须算实质内容。
+  否则「覆盖时段」修正后会被判定为「无实质变化」而永远提交不上去。
 
 用法：
   python3 scripts/check-changes.py            # 有变化返回 0，无变化返回 1
@@ -48,6 +53,7 @@ def substantive(data):
     meta = data.get('meta', {})
     return {
         'items': items,
+        'coverage': meta.get('coverage', ''),
         'needsReview': meta.get('needsReview', []),
         'linkWarnings': meta.get('linkWarnings', []),
     }
@@ -108,9 +114,12 @@ def main():
                     print(f'      新增 {len(added)} 条')
                 if removed:
                     print(f'      移除 {len(removed)} 条')
-                for k in ('needsReview', 'linkWarnings'):
+                for k in ('coverage', 'needsReview', 'linkWarnings'):
                     if cur_sub[k] != head_sub[k]:
-                        print(f'      {k} 有变化')
+                        if k == 'coverage':
+                            print(f'      覆盖时段: {head_sub[k]} → {cur_sub[k]}')
+                        else:
+                            print(f'      {k} 有变化')
 
     if changed_files:
         print(f'\n  结论：有实质变化（{len(changed_files)} 个文件）')

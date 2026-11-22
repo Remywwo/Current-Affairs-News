@@ -69,6 +69,7 @@ npm run preview   # 预览构建产物 http://127.0.0.1:4173/
 
 ```
 push main → deploy-pages.yml → vite build → dist/ → actions/deploy-pages
+数据流水线完成 → workflow_run → deploy-pages.yml → 同上
 ```
 
 | 环节 | 配置 |
@@ -76,14 +77,18 @@ push main → deploy-pages.yml → vite build → dist/ → actions/deploy-pages
 | 构建产物目录 | `dist/`（`vite.config.ts` 的 `build.outDir`） |
 | Pages 部署源 | **GitHub Actions**（仓库 Settings → Pages → Source） |
 | 资源引用 | `base: './'` 相对路径，适配任意子路径 |
-| 触发条件 | `push` 到 `main` 且命中路径过滤（`src/**`、`public/**`、配置文件） |
+| 触发条件 | `push` 到 `main` 且命中路径过滤（`src/**`、`public/**`、`scripts/**`、配置文件）+ `workflow_run`（数据流水线跑完后） |
 
 > **为什么不用 `docs/` 目录方案**：产物提交进仓库会让每次数据更新都产生
 > 巨大 diff，仓库体积也随构建产物膨胀。走 Actions 后仓库只存源码。
 
-> **为什么不用 `workflow_run` 触发部署**：数据更新流水线提交的是
-> `src/data/*.json`，命中 `push` 的 `src/**` 路径过滤，已经会触发部署。
-> 再加 `workflow_run` 会导致同一次数据更新部署两遍。
+> **为什么必须有 `workflow_run` 兜底**：GitHub 规定 **`GITHUB_TOKEN` 的推送
+> 不会触发其他 workflow**（防递归机制）。而数据更新流水线正是用
+> `GITHUB_TOKEN` 提交 `src/data/*.json` 的 —— 所以只靠 `push` 触发的话，
+> **数据更新后站点根本不会重新部署**（这个坑踩过一次，修复见 commit `1faf70e`）。
+> `workflow_run` 不受该限制，数据流水线跑完后再触发一次部署，闭环才成立。
+> 代价是同一次更新可能部署两遍（`push` + `workflow_run`），
+> 但 `concurrency` 会把两次串行化，结果相同，无副作用。
 
 ## 自动更新流水线
 
@@ -93,6 +98,18 @@ python3 scripts/update.py --dry-run  # 试运行，不改数据
 ```
 
 仅用 Python 标准库，无需安装依赖。
+
+**触发时机：** 每天**北京时间 09:00**（UTC 01:00）由 GitHub Actions 定时触发，
+自动完成「抓取 → 核验 → 合并 → 有实质变化才提交 → 自动部署」。
+也可以随时手动触发：
+
+```bash
+gh workflow run update-data.yml                    # 正式更新
+gh workflow run update-data.yml -f dry_run=true     # 只抓取校验，不写入
+```
+
+> GitHub 的定时触发不保证精确，可能延迟若干分钟；
+> 仓库新建后的首次调度还需要一段时间才会生效。
 
 **三步走，核心原则是「宁可不收录，也不可编造」：**
 

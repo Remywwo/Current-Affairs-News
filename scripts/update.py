@@ -239,6 +239,29 @@ def now_cn():
     return datetime.now(CN_TZ).strftime('%Y-%m-%d')
 
 
+def compute_coverage(items, granularity='day'):
+    """按条目的真实日期范围生成「覆盖时段」描述。
+
+    背景：coverage 早先是手工写进 JSON 的，update.py 从不碰它 ——
+    于是它永远停着手工写入那天的日期。实际后果：页面首页和「来源说明」
+    区块都在展示这个字段，用户会看到「已收录 11-22 的新闻，
+    却写着覆盖到 11-21」这种自相矛盾的信息。
+
+    改为按数据实算，两个板块的粒度沿用原设计：
+      news     日粒度 → '2026年11月3日 — 2026年11月22日'
+      speeches 月粒度 → '2025年5月 — 2026年11月'
+    """
+    dates = sorted(i['date'] for i in items if i.get('date'))
+    if not dates:
+        return None
+    start, end = dates[0], dates[-1]
+    sy, sm, sd = start.split('-')
+    ey, em, ed = end.split('-')
+    if granularity == 'month':
+        return f'{sy}年{int(sm)}月 — {ey}年{int(em)}月'
+    return f'{sy}年{int(sm)}月{int(sd)}日 — {ey}年{int(em)}月{int(ed)}日'
+
+
 # ---------------------------------------------------------------- 抓取
 
 def parse_list(html, base_url):
@@ -451,6 +474,7 @@ def update_speeches(dry=False):
     added = 0 if dry else merge_speech(existing, ok)
     if not dry:
         existing['meta']['updatedAt'] = now_cn()
+        existing['meta']['coverage'] = compute_coverage(existing['items'], 'month')
         existing['meta']['lastRun'] = {
             'at': now_cn(), 'candidates': len(cands),
             'linkOk': len(ok), 'dropped': len(dropped), 'added': added,
@@ -480,6 +504,7 @@ def update_news(dry=False):
         added, empty_dropped = merge_news(existing, ok)
     if not dry:
         existing['meta']['updatedAt'] = now_cn()
+        existing['meta']['coverage'] = compute_coverage(existing['items'], 'day')
         existing['meta']['lastRun'] = {
             'at': now_cn(), 'candidates': len(cands),
             'linkOk': len(ok), 'dropped': len(dropped), 'added': added,
