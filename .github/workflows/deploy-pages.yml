@@ -78,6 +78,31 @@ jobs:
       - name: 构建
         run: npm run build
 
+      - name: 启动预览服务
+        # 浏览器测试需要一个 HTTP 服务。背景任务 + 轮询等待就绪，
+        # 不用 --strictPort（端口被占用时自动换端口反而更难排查）。
+        run: |
+          set -euo pipefail
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:4173/; then
+              echo "预览服务已就绪"
+              break
+            fi
+            sleep 1
+          done
+          curl -sf -o /dev/null http://127.0.0.1:4173/ || {
+            echo "预览服务启动失败"; exit 1;
+          }
+
+      - name: 浏览器端到端测试
+        # 用真实 Chromium 跑：渲染、限长、瀑布流几何、中文输入、主题切换
+        run: node scripts/browser-test.mjs http://127.0.0.1:4173/
+
+      - name: 响应式测试
+        # 校验各断点下的列数、限宽居中、以及窗口缩放后的重排
+        run: node scripts/responsive-test.mjs http://127.0.0.1:4173/
+
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3
         with:

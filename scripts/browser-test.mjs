@@ -36,7 +36,14 @@ function findChromium() {
       if (fs.existsSync(l)) candidates.push(l);
     }
   }
-  candidates.push('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome');
+  candidates.push(
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+    // Linux（GitHub Actions runner 预装）
+    '/usr/bin/google-chrome',
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+  );
   return candidates.find((p) => fs.existsSync(p));
 }
 

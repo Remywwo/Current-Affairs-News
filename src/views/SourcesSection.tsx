@@ -54,6 +54,7 @@ export function SourcesSection({ data }: { data: AppData }) {
           </tbody>
         </table>
       </div>
+      <p className="table-hint">← 左右滑动查看完整表格 →</p>
 
       <div className="section-head"><h2>讲话栏目明细</h2></div>
       <div className="chips">

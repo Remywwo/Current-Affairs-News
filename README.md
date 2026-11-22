@@ -27,6 +27,27 @@
   - `meta.pending`（曾计划收录但无法核实的考点）保留在 JSON 里，但不在前端展示。
 - 响应式、深浅色主题、关键词搜索、分类与年份筛选。
 
+## 响应式布局
+
+内容卡片用 CSS Grid 自适应列数，窄屏逐级降列：
+
+| 视口宽度 | 列数 | 说明 |
+|---|---|---|
+| ≤900px | **1** | 手机横屏、小平板竖屏。卡片限宽 720px 居中，不铺满超宽屏 |
+| 901–1279px | 2 | 小笔记本 |
+| 1280–1499px | 3 | 桌面 |
+| ≥1500px | 3（封顶） | 超宽屏不再加列，否则每列太窄、标题都放不下 |
+
+另有 ≤640px（手机竖屏，收紧留白与字号）与 ≤380px（超窄屏，收紧卡片内边距）两档微调。
+等高规整组（导航卡、统计块）与页脚三栏在 ≤900px 下同样降为单列。
+
+**一个容易踩的坑**：`useMasonry.ts` 用 JS 给卡片写内联 `grid-column` 指定列号。
+窗口从宽屏缩到窄屏时，上一轮的列号会指向不存在的列，CSS Grid 会创建
+**隐式列**；而 `getComputedStyle().gridTemplateColumns` 返回的已使用值
+**包含隐式轨道**，导致列数被误判、卡片被压成 42px。
+解法是读列数前先清空内联 `gridColumn` 并强制回流 —— 详见该文件注释。
+`responsive-test.mjs` 专门复现这个「先宽后窄」场景。
+
 ## 运行
 
 技术栈：**React 18 + TypeScript + Vite**。
@@ -142,6 +163,7 @@ scripts/
   masonry-test.mjs      瀑布流几何回归测试
   truncate-test.mjs     卡片正文截断回归测试
   browser-test.mjs      真实浏览器端到端测试
+  responsive-test.mjs   响应式测试（各断点列数 + 窗口缩放重排）
   push-via-api.py       绕过 OAuth 限制的推送脚本
 .github/workflows/
   update-data.yml       每日数据更新流水线
@@ -155,14 +177,15 @@ npx tsx scripts/render-test.mjs       # 渲染冒烟测试
 node scripts/masonry-test.mjs         # 瀑布流几何回归测试
 npx tsx scripts/truncate-test.mjs      # 卡片正文截断回归测试
 node scripts/browser-test.mjs http://127.0.0.1:4173/   # 浏览器端到端
+node scripts/responsive-test.mjs http://127.0.0.1:4173/ # 响应式测试
 ```
 
 > 前三个测试都**不需要启动 HTTP 服务** —— 数据直接读本地 `src/data/*.json`。
 > `render-test` / `truncate-test` 用 `tsx` 运行，因为它们要直接 import
 > `src/` 下的 `.tsx` 组件。
 >
-> `browser-test.mjs` 需要先 `npm run build && npm run preview`，它用真实
-> Chromium 加载页面，校验渲染、限长、瀑布流几何、中文输入、主题切换。
+> 后两个浏览器测试需要先 `npm run build && npm run preview`，
+> 它们用真实 Chromium 加载页面。找不到浏览器时退出码为 2（跳过，不阻塞部署）。
 
 > **为什么需要这几个测试**：
 > - `render-test.mjs`：`tsc --noEmit` 只能查类型，查不出「读取了 undefined
@@ -170,8 +193,9 @@ node scripts/browser-test.mjs http://127.0.0.1:4173/   # 浏览器端到端
 > - `masonry-test.mjs`：曾出现过「卡片之间有大量空白」的 bug —— 根因是 span 计算公式**除错了分母**（除以 `rowHeight` 而非 `rowHeight + rowGap`），导致 span 被放大约 3 倍、视觉间距达 298～816px。本测试严格按 CSS Grid 规范（`span N 占位 = N*行高 + (N-1)*rowGap`）复算，并校验 CSS 与 `useMasonry.ts` 的配置常量是否同步。
 > - `truncate-test.mjs`：卡片正文限 300 字，曾出现省略号**没算进预算**导致实际显示 301 字。本测试独立复算每张卡片的正文字数，并验证展示文本始终是源文本的前缀（不篡改、不编造）。
 > - `browser-test.mjs`：覆盖真实浏览器里才暴露的问题 —— 页面是否白屏、中文输入是否被 IME 打断、瀑布流实际间距是否正确、控制台是否有报错。
+> - `responsive-test.mjs`：固化各断点的列数预期，并复现「先宽屏后窄屏」的窗口缩放场景 —— 曾出现卡片被压成 42px 的 bug（CSS Grid 隐式列陷阱，详见 `useMasonry.ts` 注释）。
 
-改完前端代码务必把前三个都跑一遍；改动涉及渲染或交互时，第四个也要跑。
+改完前端代码务必把前三个都跑一遍；改动涉及渲染或交互时，第四个也要跑；改动涉及样式或布局时，第五个也要跑。
 
 ## 数据规范
 

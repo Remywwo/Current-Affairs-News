@@ -37,15 +37,23 @@ export function useMasonry<T extends HTMLElement>() {
       const cards = Array.from(grid.children) as HTMLElement[];
       if (!cards.length) continue;
 
-      const styles = getComputedStyle(grid);
-      const colCount =
-        styles.gridTemplateColumns.split(' ').filter((s) => s && s !== 'none').length || 1;
-
       // 先全部置为自动定位，避免上一轮 span 干扰测量
       for (const c of cards) {
         c.style.gridRowEnd = 'auto';
         c.style.gridColumn = '';
       }
+
+      // 列数必须在重置之后读 —— 这是个隐蔽的坑：
+      //   上一轮布局给卡片写了内联 grid-column: 2 / span 1（当时是 3 列）。
+      //   窗口缩窄后 CSS 变成 1 列，但这个内联样式仍指向不存在的第 2 列，
+      //   CSS Grid 会为它创建一个**隐式列**。
+      //   而 getComputedStyle 返回的 gridTemplateColumns 是**已使用值**，
+      //   包含隐式轨道 → 读出来是 "0px 350px 350px" 三列，
+      //   于是按 3 列重新分配，隐式列越建越多，永远错。
+      //   先清空 gridColumn 再读，得到的才是 CSS 定义的轨道数。
+      const styles = getComputedStyle(grid);
+      const colCount =
+        styles.gridTemplateColumns.split(' ').filter((s) => s && s !== 'none').length || 1;
 
       // 强制回流后测量高度
       const heights = cards.map((c) => c.getBoundingClientRect().height);

@@ -196,6 +196,11 @@ body {
    若 rowGap 非 0，span 与真实高度之间会多出一截，表现为卡片下方留白。 */
 .grid { display: grid; gap: 14px; }
 .grid.cols-2 {
+  /* 自适应列数：每列至少 320px，能放几列放几列。
+     上限 3 列 —— 再宽的话单张卡片行长过长，阅读体验下降。
+     注：这里不用 min(1fr, 420px) —— auto-fill 上下文里
+     min() 包裹 fr 会被判为无效值，导致整条声明失效回退成单列。
+     列宽上限改由媒体查询单独控制。 */
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   grid-auto-rows: 1px;
   row-gap: 0;
@@ -325,13 +330,33 @@ body {
 }
 
 /* ---------- Table ---------- */
-.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.table-wrap {
+  overflow-x: auto; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+  /* 表格 min-width 640px 是有意为之 —— 列太多，压缩后没法看。
+     窄屏改为横向滚动，这里加渐隐提示右边缘还有内容。 */
+  background-image: linear-gradient(to left, var(--surface), transparent 24px);
+  background-repeat: no-repeat;
+  background-attachment: local, scroll;
+}
+/* 滚动到头时去掉右侧渐隐，滚动到尾时去掉左侧渐隐 */
+.table-wrap::-webkit-scrollbar { height: 6px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 640px; }
 th, td { padding: 11px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
 th { background: var(--surface-2); font-weight: 600; color: var(--text-soft); font-size: 12.5px; letter-spacing: .4px; white-space: nowrap; }
 tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: var(--surface-2); }
 td code { font-size: 12px; background: var(--bg-soft); padding: 1px 6px; border-radius: 4px; }
+
+/* 窄屏提示表格可横滑 */
+.table-hint { display: none; }
+@media (max-width: 900px) {
+  .table-hint {
+    display: block; margin: 8px 0 0; font-size: 12px;
+    color: var(--text-mute); text-align: center;
+  }
+}
 
 /* ---------- Notice ---------- */
 .notice {
@@ -382,6 +407,32 @@ td code { font-size: 12px; background: var(--bg-soft); padding: 1px 6px; border-
 .to-top.show { opacity: 1; pointer-events: auto; }
 .to-top:hover { color: var(--accent); border-color: var(--accent-line); }
 
+/* ---------- 响应式 ----------
+   三层断点，从窄到宽：
+     ≤900px  单列（手机横屏、小平板竖屏）—— 卡片限宽居中，行长可控
+     ≤640px  手机竖屏 —— 进一步压缩留白、字号与控件尺寸
+     ≤380px  超窄屏（小尺寸安卓机）—— 卡片内边距收到最小 */
+
+@media (max-width: 900px) {
+  /* 单列。用 minmax(0, 1fr) 而非 1fr —— 后者会让 grid 子项的
+     min-content 宽度参与计算，长链接可能撑破容器。 */
+  .grid.cols-2 { grid-template-columns: minmax(0, 1fr); }
+  /* 卡片限宽居中：不铺满整个屏幕 —— 600px+ 的行长阅读体验很差 */
+  .grid.cols-2 > .card { max-width: 720px; width: 100%; margin-inline: auto; }
+
+  /* 等高规整组同样单列 */
+  .grid.grid-even { grid-template-columns: minmax(0, 1fr); }
+  .grid.grid-even > .card { max-width: 720px; width: 100%; margin-inline: auto; }
+
+  /* 页脚三栏改单列 */
+  .footer-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+}
+
+@media (min-width: 1500px) {
+  /* 超宽屏封顶 3 列 —— 再多的话每列都太窄，标题都放不下 */
+  .grid.cols-2 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 640px) {
   .wrap { padding: 0 14px; }
   .hero { padding: 24px 20px; margin-top: 18px; }
@@ -389,6 +440,17 @@ td code { font-size: 12px; background: var(--bg-soft); padding: 1px 6px; border-
   .brand-text small { display: none; }
   .theme-label { display: none; }
   .theme-toggle { padding: 7px 11px; }
-  .grid.cols-2 { grid-template-columns: 1fr; }
   .section-head h2 { font-size: 17px; }
+
+  /* 卡片本身也要限宽居中：外层 grid 限了宽度，
+     但 grid-even 下的卡片仍需各自居中 */
+  .grid.cols-2 > .card { max-width: 560px; }
 }
+
+@media (max-width: 380px) {
+  .wrap { padding: 0 10px; }
+  .card { padding: 15px 15px; }
+  .grid.cols-2 > .card { max-width: 100%; }
+  .section-head h2 { font-size: 16px; }
+}
+
