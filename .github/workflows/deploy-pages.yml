@@ -5,9 +5,11 @@ on:
     branches: [main]
     paths:
       # 只关心前端产物与数据的变化。
-      # scripts/ 的改动若不影响产物（如仅更新抓取逻辑），由「更新数据」流水线负责。
+      # scripts/ 也纳入 —— 部署流水线现在会跑 scripts/ 下的回归测试，
+      # 测试脚本本身变了却不触发部署，等于这次改动没被验证过。
       - 'src/**'
       - 'public/**'
+      - 'scripts/**'
       - 'index.html'
       - 'package.json'
       - 'package-lock.json'
@@ -78,30 +80,19 @@ jobs:
       - name: 构建
         run: npm run build
 
-      - name: 启动预览服务
-        # 浏览器测试需要一个 HTTP 服务。背景任务 + 轮询等待就绪，
-        # 不用 --strictPort（端口被占用时自动换端口反而更难排查）。
-        run: |
-          set -euo pipefail
-          npx vite preview --port 4173 --host 127.0.0.1 &
-          for i in $(seq 1 30); do
-            if curl -sf -o /dev/null http://127.0.0.1:4173/; then
-              echo "预览服务已就绪"
-              break
-            fi
-            sleep 1
-          done
-          curl -sf -o /dev/null http://127.0.0.1:4173/ || {
-            echo "预览服务启动失败"; exit 1;
-          }
-
-      - name: 浏览器端到端测试
-        # 用真实 Chromium 跑：渲染、限长、瀑布流几何、中文输入、主题切换
-        run: node scripts/browser-test.mjs http://127.0.0.1:4173/
-
-      - name: 响应式测试
-        # 校验各断点下的列数、限宽居中、以及窗口缩放后的重排
-        run: node scripts/responsive-test.mjs http://127.0.0.1:4173/
+      - name: 回归测试
+        # 用与本地完全相同的入口（npm test），避免「本地过、CI 挂」或
+        # 「CI 过了、本地没测到」的覆盖漂移。
+        #
+        # --skip-build：复用上一步刚产出的 dist/，不重复构建。
+        # npm test 内部会自己起预览服务（自动挑空闲端口），
+        # 因此这里不用再单独管理预览服务进程。
+        #
+        # 这一步覆盖 5 个测试：渲染冒烟 / 正文截断 / 瀑布流几何
+        #（前三个不需要 HTTP 服务）+ 浏览器端到端 / 响应式布局。
+        # 其中前三个此前只在「更新数据」流水线里跑，纯代码推送不会触发 ——
+        # 那会让截断规则、渲染异常这类问题漏过 CI。
+        run: npm test -- --skip-build
 
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3

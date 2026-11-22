@@ -164,6 +164,7 @@ scripts/
   truncate-test.mjs     卡片正文截断回归测试
   browser-test.mjs      真实浏览器端到端测试
   responsive-test.mjs   响应式测试（各断点列数 + 窗口缩放重排）
+  verify-build.mjs      一键验证入口（npm test 的实际执行者）
   push-via-api.py       绕过 OAuth 限制的推送脚本
 .github/workflows/
   update-data.yml       每日数据更新流水线
@@ -171,6 +172,16 @@ scripts/
 ```
 
 ## 测试
+
+```bash
+npm test                 # 一键跑完下面全部 5 个测试（推荐）
+```
+
+`npm test` 会依次执行：类型检查 → 生产构建 → 启动预览服务（自动挑空闲端口）
+→ 3 个逻辑测试 → 2 个浏览器测试 → 关闭服务并汇总结果。
+想复用已有的 `dist/` 跳过构建：`npm test -- --skip-build`。
+
+也可以单独跑：
 
 ```bash
 npx tsx scripts/render-test.mjs       # 渲染冒烟测试
