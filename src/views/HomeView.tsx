@@ -31,16 +31,16 @@ export function HomeView({ data }: { data: AppData }) {
     <>
       <section className="hero">
         <span className="hero-tag">官方来源 · 逐条可溯源 · 无编造</span>
-        <h1>时政要点与执法常识，一站备齐</h1>
+        <h1>时政要点与执法、政治常识，一站备齐</h1>
         <p>
-          三个板块：习近平总书记重要讲话与重要指示、最新时政新闻、国考省考执法类常识。
+          三个板块：习近平总书记重要讲话与重要指示、最新时政新闻、国考省考执法与政治类常识。
           <strong>每一条都标注了发布时间与官方出处链接</strong>，
           要点为原文分类摘录，不作演绎。数据快照：{data.speeches.meta.updatedAt}。
         </p>
         <div className="hero-stats">
           <div className="stat-pill"><b>{s}</b><span>讲话/指示/文章</span></div>
           <div className="stat-pill"><b>{n}</b><span>时政新闻</span></div>
-          <div className="stat-pill"><b>{l}</b><span>执法常识考点</span></div>
+          <div className="stat-pill"><b>{l}</b><span>执法与政治常识</span></div>
           <div className="stat-pill"><b>{cats.length}</b><span>讲话类别</span></div>
         </div>
       </section>
@@ -92,8 +92,8 @@ export function HomeView({ data }: { data: AppData }) {
           desc="时政要闻、法治与执法动态、政策新规，附关键数据"
         />
         <NavCard
-          route="/law" title="执法常识" cls="t-green" count={`${l} 条`}
-          desc="行政法、行政诉讼、宪法、刑法、公文写作等考点，每条标法条出处"
+          route="/law" title="执法与政治常识" cls="t-green" count={`${l} 条`}
+          desc="行政法、行政诉讼、宪法、刑法、公文写作，以及党的性质宗旨、基本路线、组织原则、党的纪律、全过程人民民主等政治常识考点"
         />
       </EvenGrid>
 

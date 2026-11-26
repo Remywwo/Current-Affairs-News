@@ -36,16 +36,16 @@ export function LawView({ data }: { data: LawData }) {
   return (
     <>
       <div className="section-head">
-        <h2>国考·省考执法类常识</h2>
+        <h2>国考·省考执法与政治常识</h2>
         <span className="hint">
           共 {data.items.length} 条 · 当前筛选 {items.length} 条
         </span>
       </div>
 
       <div className="notice">
-        <b>每条均标注法条出处与官方链接。</b>
-        条文序号取自官方发布的现行有效文本；无法从官方源核实的考点不予收录。
-        点击「原文链接」可跳转原文自行比对。
+        <b>每条均标注法条或文献出处与官方链接。</b>
+        法条序号取自官方发布的现行有效文本；政治常识取自《中国共产党章程》《党的二十大报告》等官方全文。
+        无法从官方源核实的考点不予收录，点击「原文链接」可跳转原文自行比对。
       </div>
 
       <div className="controls">

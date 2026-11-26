@@ -46,9 +46,9 @@ export function SourcesSection({ data }: { data: AppData }) {
               <td>{news.items.length}</td>
             </tr>
             <tr>
-              <td>执法常识</td>
-              <td>全国人大网 · 中国政府网 · 最高法/最高检</td>
-              <td><code>flk.npc.gov.cn · www.gov.cn · www.court.gov.cn · www.spp.gov.cn</code></td>
+              <td>执法与政治常识</td>
+              <td>全国人大网 · 中国政府网 · 共产党员网 · 最高法/最高检</td>
+              <td><code>flk.npc.gov.cn · www.gov.cn · www.12371.cn · www.court.gov.cn · www.spp.gov.cn</code></td>
               <td>{law?.items.length ?? 0}</td>
             </tr>
           </tbody>

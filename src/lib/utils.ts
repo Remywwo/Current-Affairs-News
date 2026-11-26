@@ -90,6 +90,7 @@ const CAT_CLASS: Record<string, string> = {
   执法: 't-amber', 法治建设: 't-blue', 社会治理: 't-amber',
   社会: 't-mute', 安全生产: 't-amber', 公共卫生: 't-green',
   基础设施: 't-mute', 人事: 't-mute', 政务: 't-blue',
+  政治理论: 't-red', 党内法规: 't-red',
 };
 
 export function catClass(cat: string): string {

@@ -67,7 +67,7 @@ const routes = [
   ['#/', '总览', '最新讲话与指示'],
   ['#/speeches', '讲话与指示', '讲话与重要指示'],
   ['#/news', '时政新闻', '最新时政新闻'],
-  ['#/law', '执法常识', '国考·省考执法类常识'],
+  ['#/law', '执法与政治常识', '国考·省考执法与政治常识'],
 ];
 for (const [hash, label, expect] of routes) {
   await page.goto(BASE + hash, { waitUntil: 'networkidle' });
