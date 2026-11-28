@@ -14,17 +14,9 @@
     "lastRun": {
       "at": "2026-11-28",
       "total": 75,
-      "invalidLinks": 1,
+      "invalidLinks": 0,
       "warnLinks": 0
-    },
-    "needsReview": [
-      {
-        "id": "lv-force-03",
-        "code": "URLError",
-        "sourceUrl": "https://www.court.gov.cn/zixun/xiangqing/2888.html",
-        "note": "链接已失效，需人工复核该条法条依据"
-      }
-    ]
+    }
   },
   "items": [
     {
