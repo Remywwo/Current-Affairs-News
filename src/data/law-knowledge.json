@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "国考省考执法与政治常识（核心法条核验版）",
-    "updatedAt": "2026-11-27",
+    "updatedAt": "2026-11-28",
     "disclaimer": "本批次条文与政治常识均从全国人大网（npc.gov.cn）、中国政府网（gov.cn）、共产党员网（12371.cn）、新华网受权发布页面逐条核对原文后整理，条号与表述可直接在官方链接中检索定位。未核实到的考点一律未收录。",
     "pending": [
       "《立法法》各条具体条文号——未能在 npc.gov.cn 检索到稳定的单页全文链接，暂按章节级定位收录",
@@ -12,11 +12,19 @@
     ],
     "linkVerification": "2026-11-26 对全部来源链接逐条校验：原有链接 0 失效；本次新增的《中国共产党章程》《党的二十大报告》官方全文链接已实测可直接打开。",
     "lastRun": {
-      "at": "2026-11-27",
+      "at": "2026-11-28",
       "total": 75,
-      "invalidLinks": 0,
+      "invalidLinks": 1,
       "warnLinks": 0
-    }
+    },
+    "needsReview": [
+      {
+        "id": "lv-force-03",
+        "code": "URLError",
+        "sourceUrl": "https://www.court.gov.cn/zixun/xiangqing/2888.html",
+        "note": "链接已失效，需人工复核该条法条依据"
+      }
+    ]
   },
   "items": [
     {
